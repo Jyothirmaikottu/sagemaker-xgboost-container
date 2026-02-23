@@ -129,19 +129,19 @@ RUN cd /tmp && \
 
 ENV PATH=/miniconda3/bin:${PATH}
 
-# Remove default Anaconda channels to avoid repo.anaconda.com packages
-RUN conda config --system --remove channels defaults && \
-    conda config --system --add channels conda-forge
-
 # Install MLIO with Apache Arrow integration
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-# We could install mlio-py from conda, but it comes  with extra support such as image reader that increases image size
-# which increases training time. We build from source to minimize the image size.
-RUN conda config --system --set channel_priority strict && \
+# Remove default Anaconda channels and force all packages from conda-forge.
+# Miniconda ships with packages from repo.anaconda.com (defaults channel) which
+# requires a commercial license. We must remove defaults, set conda-forge as the
+# only channel, and force-reinstall all packages so none remain from defaults.
+RUN conda config --system --remove channels defaults && \
+    conda config --system --add channels conda-forge && \
+    conda config --system --set channel_priority strict && \
     conda config --system --set auto_update_conda false && \
     conda config --system --set show_channel_urls true && \
-    conda install -y -c conda-forge \
+    conda install -y --force-reinstall -c conda-forge \
         python=${PYTHON_VERSION} \
         requests=2.32.3 \
         openssl=3.6.1 \
