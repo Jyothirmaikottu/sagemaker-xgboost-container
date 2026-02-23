@@ -135,19 +135,21 @@ RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkg
 # Remove default Anaconda channels and force all packages from conda-forge.
 # Miniconda ships with packages from repo.anaconda.com (defaults channel) which
 # requires a commercial license. We must remove defaults, set conda-forge as the
-# only channel, and force-reinstall all packages so none remain from defaults.
+# only channel, and reinstall all packages so none remain from defaults.
 RUN conda config --system --remove channels defaults && \
     conda config --system --add channels conda-forge && \
     conda config --system --set channel_priority strict && \
     conda config --system --set auto_update_conda false && \
     conda config --system --set show_channel_urls true && \
-    conda install -y --force-reinstall -c conda-forge \
+    conda install -y -c conda-forge \
         python=${PYTHON_VERSION} \
         requests=2.32.3 \
         openssl=3.6.1 \
         conda=${CONDA_PKG_VERSION} \
         pyarrow=${PYARROW_VERSION} \
     --solver=libmamba && \
+    # Replace all remaining packages from defaults channel with conda-forge versions
+    conda update --all -y -c conda-forge --solver=libmamba && \
     conda clean -afy
 
 # Then handle the grpc and npm parts separately
