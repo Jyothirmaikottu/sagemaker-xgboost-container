@@ -128,6 +128,11 @@ RUN cd /tmp && \
     rm /tmp/Miniconda3.sh
 
 ENV PATH=/miniconda3/bin:${PATH}
+
+# Remove default Anaconda channels to avoid repo.anaconda.com packages
+RUN conda config --system --remove channels defaults && \
+    conda config --system --add channels conda-forge
+
 # Install MLIO with Apache Arrow integration
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
 RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
