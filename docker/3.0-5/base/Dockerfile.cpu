@@ -25,9 +25,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Main image
 FROM nvidia/cuda:${CUDA_VERSION}-base-ubuntu${UBUNTU_VERSION}
 
-ARG MINICONDA_VERSION=25.9.1
-ARG CONDA_CHECKSUM=04a8b03d8b0ec062d923e592201a6fd88b7247c309ef8848afb25c424c40ac39
-ARG CONDA_PY_VERSION=310
+ARG MINIFORGE_VERSION=25.9.1-0
+ARG CONDA_CHECKSUM=07f64c1d908ae036e9f6a81f97704899311c0ae677d83980d664b9781d4cc5fc
 ARG CONDA_PKG_VERSION=25.9.1
 ARG PYTHON_VERSION=3.10
 ARG PYARROW_VERSION=22.0.0
@@ -120,36 +119,23 @@ RUN apt-key del 7fa2af80 && \
     npm install -g npm@latest && \
     rm -rf /var/lib/apt/lists/*
 
-# Install conda
+# Install conda via Miniforge (uses conda-forge by default, no repo.anaconda.com packages)
 RUN cd /tmp && \
-    curl -L --output /tmp/Miniconda3.sh https://repo.anaconda.com/miniconda/Miniconda3-py${CONDA_PY_VERSION}_${MINICONDA_VERSION}-1-Linux-x86_64.sh && \ 
-    echo "${CONDA_CHECKSUM} /tmp/Miniconda3.sh" | sha256sum -c - && \
-    bash /tmp/Miniconda3.sh -bfp /miniconda3 && \
-    rm /tmp/Miniconda3.sh
+    curl -L --output /tmp/Miniforge3.sh https://github.com/conda-forge/miniforge/releases/download/${MINIFORGE_VERSION}/Miniforge3-${MINIFORGE_VERSION}-Linux-x86_64.sh && \
+    echo "${CONDA_CHECKSUM} /tmp/Miniforge3.sh" | sha256sum -c - && \
+    bash /tmp/Miniforge3.sh -bfp /miniconda3 && \
+    rm /tmp/Miniforge3.sh
 
 ENV PATH=/miniconda3/bin:${PATH}
 
-# Install MLIO with Apache Arrow integration
-RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
-RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-# Remove default Anaconda channels and force all packages from conda-forge.
-# Miniconda ships with packages from repo.anaconda.com (defaults channel) which
-# requires a commercial license. We must remove defaults, set conda-forge as the
-# only channel, and reinstall all packages so none remain from defaults.
-RUN conda config --system --remove channels defaults && \
-    conda config --system --add channels conda-forge && \
-    conda config --system --set channel_priority strict && \
-    conda config --system --set auto_update_conda false && \
-    conda config --system --set show_channel_urls true && \
-    conda install -y -c conda-forge \
+# Install required packages from conda-forge
+RUN conda install -y --solver=libmamba \
         python=${PYTHON_VERSION} \
+        conda=${CONDA_PKG_VERSION} \
         requests=2.32.3 \
         openssl=3.6.1 \
-        conda=${CONDA_PKG_VERSION} \
-        pyarrow=${PYARROW_VERSION} \
-    --solver=libmamba && \
-    # Replace all remaining packages from defaults channel with conda-forge versions
-    conda update --all -y -c conda-forge --solver=libmamba && \
+        pyarrow=${PYARROW_VERSION} && \
+    conda config --system --set auto_update_conda false && \
     conda clean -afy
 
 # Then handle the grpc and npm parts separately
