@@ -131,7 +131,6 @@ ENV PATH=/miniconda3/bin:${PATH}
 # Install required packages from conda-forge
 RUN conda install -y --solver=libmamba \
         python=${PYTHON_VERSION} \
-        conda=${CONDA_PKG_VERSION} \
         requests=2.32.3 \
         openssl=3.6.1 \
         pyarrow=${PYARROW_VERSION} && \
