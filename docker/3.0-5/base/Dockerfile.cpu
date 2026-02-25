@@ -128,12 +128,12 @@ RUN cd /tmp && \
 ENV PATH=/miniconda3/bin:${PATH}
 
 # Install required packages from conda-forge
-RUN conda install -y --solver=libmamba \
+RUN conda config --system --set auto_update_conda false && \
+    conda install -y --solver=libmamba \
         python=${PYTHON_VERSION} \
         requests=2.32.3 \
         openssl=3.6.1 \
         pyarrow=${PYARROW_VERSION} && \
-    conda config --system --set auto_update_conda false && \
     conda clean -afy
 
 # Then handle the grpc and npm parts separately
